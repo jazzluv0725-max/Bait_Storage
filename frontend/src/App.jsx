@@ -3,6 +3,7 @@ import { LayoutDashboard, Ship, PackageSearch, ClipboardList, Map as MapIcon, Se
 import { motion } from 'framer-motion'
 import InboundPage from './components/InboundPage'
 import InventoryPage from './components/InventoryPage'
+import OutboundPage from './components/OutboundPage'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -11,7 +12,7 @@ function App() {
     { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
     { id: 'inbound', label: '입고/수입 관리', icon: PackageSearch },
     { id: 'inventory', label: '재고 현황', icon: ClipboardList },
-    { id: 'outbound', label: '출고/예약 관리', icon: Ship },
+    { id: 'outbound', label: '출고 관리', icon: Ship },
     { id: 'tracking', label: '컨테이너 추적', icon: MapIcon },
   ]
 
@@ -71,12 +72,12 @@ function App() {
             >
               <div className="glass-card">
                 <h3 style={{ marginTop: 0 }}>전체 재고 요약</h3>
-                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--accent-blue)' }}>12,450 BOX</div>
-                <p style={{ color: 'var(--text-secondary)' }}>가용 재고: 8,200 BOX</p>
+                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--accent-blue)' }}>12,450 C/S</div>
+                <p style={{ color: 'var(--text-secondary)' }}>가용 재고: 8,200 C/S</p>
               </div>
               <div className="glass-card">
-                <h3 style={{ marginTop: 0 }}>예약 대기</h3>
-                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--warning)' }}>4,250 BOX</div>
+                <h3 style={{ marginTop: 0 }}>예약/출고 대기</h3>
+                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--warning)' }}>4,250 C/S</div>
                 <p style={{ color: 'var(--text-secondary)' }}>신영 51호 외 3선박</p>
               </div>
               <div className="glass-card">
@@ -96,9 +97,14 @@ function App() {
               <InventoryPage />
             </motion.div>
           )}
-          {activeTab !== 'dashboard' && activeTab !== 'inbound' && activeTab !== 'inventory' && (
+          {activeTab === 'outbound' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <OutboundPage />
+            </motion.div>
+          )}
+          {activeTab === 'tracking' && (
             <div className="glass-card" style={{ textAlign: 'center', padding: '5rem' }}>
-              <p style={{ color: 'var(--text-secondary)' }}>준비 중인 화면입니다.</p>
+              <p style={{ color: 'var(--text-secondary)' }}>컨테이너 추적 화면 준비 중입니다.</p>
             </div>
           )}
         </section>

@@ -55,12 +55,13 @@ class Inventory(Base):
     lot_id = Column(String, ForeignKey("lots.id"))
     spec_id = Column(Integer, ForeignKey("bait_specs.id"))
     warehouse_id = Column(Integer, ForeignKey("warehouses.id"))
-    initial_quantity = Column(Integer)  # Box 단위
+    initial_quantity = Column(Integer)  # C/S 단위 (Case)
     current_quantity = Column(Integer)
     reserved_quantity = Column(Integer, default=0)
-    kg_per_box = Column(Float, default=10.0) # 박스당 중량 (10, 15, 20kg 등)
+    kg_per_box = Column(Float, default=10.0) # 케이스당 중량 (10, 15, 20kg 등)
     unit_price_usd = Column(Float, nullable=True) # 단가 (USD)
     unit_price_krw = Column(Integer, nullable=True) # 단가 (KRW)
+    warehouse_mgmt_no = Column(String, nullable=True) # 창고 측 관리 번호
     
     lot = relationship("Lot", back_populates="inventory_items")
     spec = relationship("BaitSpec")
@@ -74,7 +75,22 @@ class OutboundOrder(Base):
     sub_vessel_id = Column(Integer, ForeignKey("vessels.id"), nullable=True) # 운반선 하위 수령 선박
     delivery_type = Column(String)  # 'Direct' (본선입항), 'Carrier' (운반선탁송)
     schedule_date = Column(DateTime)
+    departure_point = Column(String, nullable=True) # 도착지 (예: 감천부두)
+    arrival_time = Column(String, nullable=True) # 도착 예정 시간
+    remarks = Column(String, nullable=True) # 특이사항 (예: Palette 사용 필수)
     status = Column(String, default="pending") # pending, reserved, dispatched
+    actual_date = Column(DateTime, nullable=True) # 실제 출고일
     
     vessel = relationship("Vessel", foreign_keys=[vessel_id])
     sub_vessel = relationship("Vessel", foreign_keys=[sub_vessel_id])
+    items = relationship("OutboundOrderItem", back_populates="order", cascade="all, delete-orphan")
+
+class OutboundOrderItem(Base):
+    __tablename__ = "outbound_order_items"
+    id = Column(Integer, primary_key=True, index=True)
+    outbound_id = Column(Integer, ForeignKey("outbound_orders.id"))
+    inventory_id = Column(Integer, ForeignKey("inventory.id"))
+    release_quantity = Column(Integer) # 출고 수량 (C/S)
+    
+    order = relationship("OutboundOrder", back_populates="items")
+    inventory = relationship("Inventory")

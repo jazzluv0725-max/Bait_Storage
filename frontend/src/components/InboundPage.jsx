@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { Plus, Save, Trash2, Package, X, ChevronRight } from 'lucide-react'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = 'http://127.0.0.1:8000'
 
 function InboundPage() {
   const [lots, setLots] = useState([])
@@ -37,6 +37,7 @@ function InboundPage() {
     kg_per_box: 10.0,
     unit_price_usd: '', 
     unit_price_krw: '',
+    warehouse_mgmt_no: '',
     _isManualSpec: false
   })
   const [itemFormSpecs, setItemFormSpecs] = useState([]) // specs for itemForm dropdown
@@ -165,7 +166,8 @@ function InboundPage() {
           initial_quantity: parseInt(i.initial_quantity),
           kg_per_box: parseFloat(i.kg_per_box),
           unit_price_usd: i.unit_price_usd ? parseFloat(i.unit_price_usd) : null,
-          unit_price_krw: i.unit_price_krw ? parseInt(i.unit_price_krw) : null
+          unit_price_krw: i.unit_price_krw ? parseInt(i.unit_price_krw) : null,
+          warehouse_mgmt_no: i.warehouse_mgmt_no || null
         }))
 
       const payload = { lot: sanitizedLot, items: validItems }
@@ -188,22 +190,36 @@ function InboundPage() {
   const handleAddInventory = async () => {
     if (!selectedLot) return
     try {
-      await axios.post(`${API_BASE}/inventory`, {
+      const payload = {
         lot_id: selectedLot.id,
         bait_id: parseInt(itemForm.bait_id),
-        spec_id: itemForm.spec_id, // string if manual
+        spec_id: itemForm.spec_id,
         warehouse_id: parseInt(itemForm.warehouse_id),
         initial_quantity: parseInt(itemForm.initial_quantity),
         kg_per_box: parseFloat(itemForm.kg_per_box),
         unit_price_usd: itemForm.unit_price_usd ? parseFloat(itemForm.unit_price_usd) : null,
-        unit_price_krw: itemForm.unit_price_krw ? parseInt(itemForm.unit_price_krw) : null
-      })
-      alert("품목이 추가되었습니다.")
-      setItemForm({ bait_id: '', spec_id: '', warehouse_id: '', initial_quantity: '', kg_per_box: 10.0, unit_price_usd: '', unit_price_krw: '', _isManualSpec: false })
-      setItemFormSpecs([])
-      fetchLotItems(selectedLot.id)
+        unit_price_krw: itemForm.unit_price_krw ? parseInt(itemForm.unit_price_krw) : null,
+        warehouse_mgmt_no: itemForm.warehouse_mgmt_no || null
+      };
+
+      await axios.post(`${API_BASE}/inventory`, payload);
+      alert("품목이 추가되었습니다.");
+      
+      setItemForm({ 
+        bait_id: '', 
+        spec_id: '', 
+        warehouse_id: '', 
+        initial_quantity: '', 
+        kg_per_box: 10.0, 
+        unit_price_usd: '', 
+        unit_price_krw: '', 
+        warehouse_mgmt_no: '',
+        _isManualSpec: false 
+      });
+      setItemFormSpecs([]);
+      fetchLotItems(selectedLot.id);
     } catch (err) {
-      alert("품목 추가 실패: " + (err.response?.data?.detail || err.message))
+      alert("품목 추가 실패: " + (err.response?.data?.detail || err.message));
     }
   }
 
@@ -343,8 +359,9 @@ function InboundPage() {
                   <th style={{ padding: '0.5rem', textAlign: 'left' }}>미끼 종류</th>
                   <th style={{ padding: '0.5rem', textAlign: 'left', width: '140px' }}>규격</th>
                   <th style={{ padding: '0.5rem', textAlign: 'left' }}>냉동창고</th>
-                  <th style={{ padding: '0.5rem', textAlign: 'left' }}>수량 (BOX)</th>
-                  <th style={{ padding: '0.5rem', textAlign: 'left' }}>중량 (KG/Box)</th>
+                  <th style={{ padding: '0.5rem', textAlign: 'left' }}>수량 (C/S)</th>
+                  <th style={{ padding: '0.5rem', textAlign: 'left' }}>중량 (KG/Case)</th>
+                  <th style={{ padding: '0.5rem', textAlign: 'left' }}>창고 관리번호</th>
                   <th style={{ padding: '0.5rem', textAlign: 'left' }}>단가 (USD $)</th>
                   <th style={{ padding: '0.5rem', textAlign: 'left' }}>단가 (KRW ₩)</th>
                   <th style={{ width: '40px' }}></th>
@@ -396,6 +413,9 @@ function InboundPage() {
                       <input type='number' step='0.5' value={item.kg_per_box} onChange={e => updateItem(idx, 'kg_per_box', e.target.value)} style={{ width: '100%' }} />
                     </td>
                     <td style={{ padding: '0.4rem' }}>
+                      <input type='text' value={item.warehouse_mgmt_no} onChange={e => updateItem(idx, 'warehouse_mgmt_no', e.target.value)} placeholder="번호" style={{ width: '100%' }} />
+                    </td>
+                    <td style={{ padding: '0.4rem' }}>
                       <input type='number' step='0.01' value={item.unit_price_usd} onChange={e => updateItem(idx, 'unit_price_usd', e.target.value)} placeholder='0.00' style={{ width: '100%' }} />
                     </td>
                     <td style={{ padding: '0.4rem' }}>
@@ -443,7 +463,7 @@ function InboundPage() {
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ETA: {lot.eta ? new Date(lot.eta).toLocaleDateString() : '-'}</div>
                   </td>
                   <td>
-                    <div style={{ fontWeight: 600 }}>{totalInitial.toLocaleString()} BOX</div>
+                    <div style={{ fontWeight: 600 }}>{totalInitial.toLocaleString()} C/S</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--accent-blue)' }}>잔량: {totalCurrent.toLocaleString()}</div>
                     {/* Product tags */}
                     <div style={{ marginTop: '0.4rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
@@ -488,7 +508,8 @@ function InboundPage() {
                   </div>
                 </td>
               </tr>
-            )})}
+            );
+          })}
           </tbody>
         </table>
       </div>
@@ -501,7 +522,7 @@ function InboundPage() {
             <button onClick={() => setSelectedLot(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X /></button>
           </div>
           
-          <div className="inventory-form" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 0.6fr 1fr 1fr auto', gap: '0.75rem', alignItems: 'end', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem' }}>
+          <div className="inventory-form" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 0.6fr 1fr 1fr 1fr auto', gap: '0.75rem', alignItems: 'end', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem' }}>
             <div>
               <label>미끼 종류</label>
               <select value={itemForm.bait_id} onChange={e => { 
@@ -546,11 +567,11 @@ function InboundPage() {
               </select>
             </div>
             <div>
-              <label>수량 (BOX)</label>
+              <label>수량 (C/S)</label>
               <input type="number" value={itemForm.initial_quantity} onChange={e => setItemForm({...itemForm, initial_quantity: e.target.value})} />
             </div>
             <div>
-              <label>중량(KG)</label>
+              <label>중량(KG/Case)</label>
               <input type="number" step="0.5" value={itemForm.kg_per_box} onChange={e => setItemForm({...itemForm, kg_per_box: e.target.value})} />
             </div>
             <div>
@@ -558,8 +579,12 @@ function InboundPage() {
               <input type="number" step="0.01" value={itemForm.unit_price_usd} onChange={e => setItemForm({...itemForm, unit_price_usd: e.target.value})} placeholder="0.00" />
             </div>
             <div>
-              <label>단가 (KRW ₩)</label>
-              <input type="number" value={itemForm.unit_price_krw} onChange={e => setItemForm({...itemForm, unit_price_krw: e.target.value})} placeholder="0" />
+              <label>단가 (KRW)</label>
+              <input type="number" value={itemForm.unit_price_krw} onChange={e => setItemForm({...itemForm, unit_price_krw: e.target.value})} />
+            </div>
+            <div>
+              <label>창고 관리번호</label>
+              <input type="text" value={itemForm.warehouse_mgmt_no} onChange={e => setItemForm({...itemForm, warehouse_mgmt_no: e.target.value})} placeholder="예: 368" />
             </div>
             <button className="btn-primary" onClick={handleAddInventory} style={{ height: '38px' }}><Plus size={18} /></button>
           </div>
@@ -575,8 +600,9 @@ function InboundPage() {
                     <th style={{ padding: '0.5rem' }}>품목</th>
                     <th>규격</th>
                     <th>창고</th>
-                    <th>수량 (BOX)</th>
-                    <th>중량 (KG/Box)</th>
+                    <th>수량 (C/S)</th>
+                    <th>중량 (KG/Case)</th>
+                    <th>관리번호</th>
                     <th>단가 (USD)</th>
                     <th>단가 (KRW)</th>
                     <th style={{ width: '50px' }}></th>
@@ -589,7 +615,8 @@ function InboundPage() {
                       <td>{allSpecs.find(s => s.id === item.spec_id)?.size_range || item.spec_id}</td>
                       <td>{warehouses.find(w => w.id === item.warehouse_id)?.name}</td>
                       <td style={{ fontWeight: 600 }}>{item.initial_quantity.toLocaleString()}</td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{item.kg_per_box}kg</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{item.kg_per_box}kg/Case</td>
+                      <td style={{ color: 'var(--accent-blue)', fontSize: '0.85rem' }}>{item.warehouse_mgmt_no || '-'}</td>
                       <td>{item.unit_price_usd ? `$${item.unit_price_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}</td>
                       <td>{item.unit_price_krw ? `₩${item.unit_price_krw.toLocaleString('ko-KR')}` : '-'}</td>
                       <td>
@@ -626,33 +653,58 @@ function InboundPage() {
         }
       `}</style>
       <style>{`
+        .inbound-page {
+          animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .glass-card {
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .glass-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+        }
         .inbound-page select {
           background: #1a2332;
           color: white;
-          border: 1px solid rgba(255,255,255,0.15);
+          border: 1px solid rgba(56, 189, 248, 0.2);
           padding: 0.4rem 0.5rem;
           border-radius: 0.4rem;
           width: 100%;
+          transition: border-color 0.2s;
         }
-        .inbound-page select option {
-          background: #1a2332;
-          color: white;
+        .inbound-page select:focus {
+          border-color: var(--accent-blue);
+          outline: none;
         }
         .inbound-page input[type='number'],
         .inbound-page input[type='text'],
         .inbound-page input[type='date'] {
           background: #1a2332;
           color: white;
-          border: 1px solid rgba(255,255,255,0.15);
+          border: 1px solid rgba(56, 189, 248, 0.2);
           padding: 0.4rem 0.5rem;
           border-radius: 0.4rem;
           width: 100%;
+          transition: border-color 0.2s;
+        }
+        .inbound-page input:focus {
+          border-color: var(--accent-blue);
+          outline: none;
         }
         .inbound-page label {
           display: block;
           font-size: 0.8rem;
           color: rgba(255,255,255,0.6);
           margin-bottom: 0.3rem;
+          font-weight: 500;
         }
       `}</style>
     </div>

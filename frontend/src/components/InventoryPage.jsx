@@ -3,7 +3,7 @@ import axios from 'axios'
 import { motion } from 'framer-motion'
 import { Filter, TrendingUp, Info } from 'lucide-react'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = 'http://127.0.0.1:8000'
 
 const InventoryPage = () => {
   const [baits, setBaits] = useState([])
@@ -68,7 +68,6 @@ const InventoryPage = () => {
       .sort((a, b) => new Date(a.inbound_date || 0) - new Date(b.inbound_date || 0))
 
     // 4. Build matrix
-    let totalWeightKg = 0
     const matrix = relevantSpecs.map(spec => {
       const lotValues = {}
       let rowTotal = 0
@@ -81,16 +80,16 @@ const InventoryPage = () => {
           unit_price_usd: item?.unit_price_usd,
           unit_price_krw: item?.unit_price_krw,
           warehouse_id: item?.warehouse_id,
-          kg_per_box: item?.kg_per_box || 10.0
+          kg_per_box: item?.kg_per_box || 10.0,
+          warehouse_mgmt_no: item?.warehouse_mgmt_no
         }
         rowTotal += qty
-        totalWeightKg += (qty * (item?.kg_per_box || 10.0))
       })
       
       return { specId: spec.id, sizeRange: spec.size_range, lotValues, rowTotal }
     })
 
-    return { specs: relevantSpecs, lots: relevantLots, matrix, totalWeightKg }
+    return { specs: relevantSpecs, lots: relevantLots, matrix }
   }, [selectedBaitId, inventory, lots, specs])
 
   const totalStock = matrixData?.matrix.reduce((sum, row) => sum + row.rowTotal, 0) || 0
@@ -99,16 +98,14 @@ const InventoryPage = () => {
     <div className="inventory-page">
       {/* Header Info */}
       <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-        <div className="glass-card" style={{ borderLeft: '4px solid var(--accent-blue)' }}>
+        <div className="glass-card" style={{ borderLeft: '4px solid var(--accent-blue)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
             <TrendingUp size={18} style={{ marginRight: '0.5rem', color: 'var(--accent-blue)' }} />
             <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>가용 재고 총합 (선택 제품)</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700 }}>{totalStock.toLocaleString()} <span style={{ fontSize: '1rem', fontWeight: 400 }}>BOX</span></div>
-            <div style={{ fontSize: '1.2rem', color: 'var(--accent-blue)', fontWeight: 600 }}>
-              {(matrixData?.totalWeightKg / 1000).toFixed(1)} <span style={{ fontSize: '0.8rem' }}>MT</span>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+            <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'white' }}>{totalStock.toLocaleString()}</div>
+            <div style={{ fontSize: '1.1rem', color: 'var(--accent-blue)', fontWeight: 600 }}>C/S</div>
           </div>
         </div>
         
@@ -160,8 +157,8 @@ const InventoryPage = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                <th style={{ padding: '1rem', textAlign: 'left', minWidth: '100px', background: '#1a2332', position: 'sticky', left: 0, zIndex: 3, boxShadow: 'none' }}>규격 (Size)</th>
-                <th style={{ padding: '1rem', textAlign: 'center', background: '#152a3a', fontWeight: 700, minWidth: '100px', position: 'sticky', left: '100px', zIndex: 3, boxShadow: '3px 0 6px rgba(0,0,0,0.4)' }}>합계 (Total)</th>
+                <th style={{ padding: '1rem', textAlign: 'left', minWidth: '120px', background: '#1a2332', position: 'sticky', left: 0, zIndex: 3, borderRight: '1px solid var(--border-color)' }}>규격 (Size)</th>
+                <th style={{ padding: '1rem', textAlign: 'center', background: '#152a3a', fontWeight: 800, minWidth: '120px', position: 'sticky', left: '120px', zIndex: 3, boxShadow: '4px 0 8px rgba(0,0,0,0.5)', color: 'var(--accent-blue)' }}>합계 (C/S)</th>
                 {matrixData.lots.map(lot => (
                   <th key={lot.id} style={{ padding: '1rem', textAlign: 'center', borderLeft: '1px solid var(--border-color)' }}>
                     <div style={{ color: 'var(--accent-blue)', fontWeight: 600 }}>{lot.id}</div>
@@ -173,8 +170,8 @@ const InventoryPage = () => {
             <tbody>
               {matrixData.matrix.map(row => (
                 <tr key={row.specId} style={{ borderBottom: '1px solid var(--border-color)', height: '50px' }}>
-                  <td style={{ padding: '1rem', fontWeight: 600, background: '#1a2332', position: 'sticky', left: 0, zIndex: 2 }}>{row.sizeRange}</td>
-                  <td style={{ textAlign: 'center', background: '#152a3a', fontWeight: 700, color: 'var(--accent-blue)', fontSize: '1.05rem', position: 'sticky', left: '100px', zIndex: 2, boxShadow: '3px 0 6px rgba(0,0,0,0.4)' }}>
+                  <td style={{ padding: '1rem', fontWeight: 600, background: '#1a2332', position: 'sticky', left: 0, zIndex: 2, borderRight: '1px solid var(--border-color)' }}>{row.sizeRange}</td>
+                  <td style={{ textAlign: 'center', background: '#152a3a', fontWeight: 800, color: 'white', fontSize: '1.1rem', position: 'sticky', left: '120px', zIndex: 2, boxShadow: '4px 0 8px rgba(0,0,0,0.5)' }}>
                     {row.rowTotal.toLocaleString()}
                   </td>
                   {matrixData.lots.map(lot => {
@@ -184,7 +181,12 @@ const InventoryPage = () => {
                     return (
                       <td key={lot.id} style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', color: qty > 0 ? 'white' : 'rgba(255,255,255,0.2)', padding: '0.5rem' }}>
                         <div>{qty > 0 ? qty.toLocaleString() : '-'}</div>
-                        {warehouseName && <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.2rem' }}>{warehouseName}</div>}
+                        {warehouseName && (
+                          <div style={{ fontSize: '0.7rem', marginTop: '0.2rem' }}>
+                            <span style={{ color: 'rgba(255,255,255,0.4)' }}>{warehouseName}</span>
+                            {cell.warehouse_mgmt_no && <span style={{ color: 'var(--accent-blue)', marginLeft: '4px' }}>[{cell.warehouse_mgmt_no}]</span>}
+                          </div>
+                        )}
                       </td>
                     )
                   })}
@@ -192,8 +194,8 @@ const InventoryPage = () => {
               ))}
               {/* Unit Price Row */}
               <tr style={{ borderTop: '1px solid var(--border-color)' }}>
-                <td style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-secondary)', background: '#1a2332', position: 'sticky', left: 0, zIndex: 2 }}>단가</td>
-                <td style={{ background: '#152a3a', position: 'sticky', left: '100px', zIndex: 2, boxShadow: '3px 0 6px rgba(0,0,0,0.4)' }}></td>
+                <td style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-secondary)', background: '#1a2332', position: 'sticky', left: 0, zIndex: 2, borderRight: '1px solid var(--border-color)' }}>매입단가</td>
+                <td style={{ background: '#152a3a', position: 'sticky', left: '120px', zIndex: 2, boxShadow: '4px 0 8px rgba(0,0,0,0.5)' }}></td>
                 {matrixData.lots.map(lot => {
                   // Find price from any spec in this lot
                   let usd = null;
